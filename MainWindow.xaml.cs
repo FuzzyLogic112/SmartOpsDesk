@@ -12,7 +12,8 @@ namespace SmartOpsDesk;
 
 public partial class MainWindow : Window
 {
-    private readonly ITicketRepository _repository = RepositoryFactory.Create();
+    private ITicketRepository _repository = RepositoryFactory.Create();
+    private string _storageName = RepositoryFactory.CurrentStorageName;
     private readonly CsvExporter _csvExporter = new();
     private readonly TicketAiAgent _agent = new();
     private readonly AttachmentService _attachmentService = new();
@@ -23,7 +24,8 @@ public partial class MainWindow : Window
     public MainWindow(string userName = "王文涛", string role = "开发")
     {
         InitializeComponent();
-        _tickets = new ObservableCollection<WorkTicket>(_repository.Load().OrderByDescending(ticket => ticket.CreatedAt));
+        var tickets = LoadTicketsWithFallback();
+        _tickets = new ObservableCollection<WorkTicket>(tickets.OrderByDescending(ticket => ticket.CreatedAt));
         _view = CollectionViewSource.GetDefaultView(_tickets);
         _view.Filter = FilterTicket;
         TicketGrid.ItemsSource = _view;
@@ -32,7 +34,7 @@ public partial class MainWindow : Window
         SelectComboValue(UserBox, userName);
         SelectComboValue(RoleBox, role);
         UpdateMetrics();
-        SetStatus($"已登录：{userName} / {role}；当前存储：{RepositoryFactory.CurrentStorageName}");
+        SetStatus($"已登录：{userName} / {role}；当前存储：{_storageName}");
     }
 
     private void Add_Click(object sender, RoutedEventArgs e)
@@ -160,7 +162,7 @@ public partial class MainWindow : Window
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        Persist("已保存到本地 JSON。");
+        Persist($"已保存到{_storageName}。");
     }
 
     private void Export_Click(object sender, RoutedEventArgs e)
@@ -402,10 +404,43 @@ public partial class MainWindow : Window
 
     private void Persist(string message)
     {
-        _repository.Save(_tickets.OrderBy(ticket => ticket.Id));
+        try
+        {
+            _repository.Save(_tickets.OrderBy(ticket => ticket.Id));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"保存失败：{ex.Message}\n\n数据暂时保留在当前界面。请检查数据库连接，或移除云数据库环境变量后使用本地 JSON。",
+                "保存失败",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         _view.Refresh();
         UpdateMetrics();
         SetStatus(message);
+    }
+
+    private List<WorkTicket> LoadTicketsWithFallback()
+    {
+        try
+        {
+            return _repository.Load();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"连接 {_storageName} 失败，已自动回退到本地 JSON 存储。\n\n错误信息：{ex.Message}",
+                "数据库连接失败",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            _repository = new TicketStore();
+            _storageName = "JSON 本地文件（云数据库连接失败后回退）";
+            return _repository.Load();
+        }
     }
 
     private void UpdateMetrics()
