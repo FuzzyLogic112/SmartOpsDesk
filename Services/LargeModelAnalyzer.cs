@@ -11,18 +11,18 @@ public sealed class LargeModelAnalyzer
     private readonly HttpClient _httpClient = new();
 
     public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_ENDPOINT"))
-        && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_API_KEY"));
+        !string.IsNullOrWhiteSpace(GetEndpoint())
+        && !string.IsNullOrWhiteSpace(GetApiKey());
 
     public async Task<string> AnalyzeAsync(WorkTicket ticket)
     {
-        var endpoint = Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_ENDPOINT");
-        var apiKey = Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_API_KEY");
-        var model = Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_MODEL") ?? "gpt-4o-mini";
+        var endpoint = GetEndpoint();
+        var apiKey = GetApiKey();
+        var model = GetModel();
 
         if (string.IsNullOrWhiteSpace(endpoint) || string.IsNullOrWhiteSpace(apiKey))
         {
-            return "未配置真实大模型接口。请设置 SMARTOPSDESK_LLM_ENDPOINT、SMARTOPSDESK_LLM_API_KEY 和可选 SMARTOPSDESK_LLM_MODEL。";
+            return "未配置真实大模型接口。请登录后点击“连接设置”，填写 AI Endpoint、AI API Key 和模型名。";
         }
 
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -64,5 +64,48 @@ public sealed class LargeModelAnalyzer
             .GetString();
 
         return string.IsNullOrWhiteSpace(content) ? "大模型返回为空。" : content;
+    }
+
+    private static string GetEndpoint()
+    {
+        var settings = AppSettingsService.Load();
+        if (AppSettingsService.Exists)
+        {
+            return string.IsNullOrWhiteSpace(settings.LlmEndpoint)
+                ? "https://api.openai.com/v1/chat/completions"
+                : settings.LlmEndpoint;
+        }
+
+        return !string.IsNullOrWhiteSpace(settings.LlmEndpoint)
+            ? Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_ENDPOINT") ?? settings.LlmEndpoint
+            : Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_ENDPOINT") ?? "https://api.openai.com/v1/chat/completions";
+    }
+
+    private static string GetApiKey()
+    {
+        var settings = AppSettingsService.Load();
+        if (AppSettingsService.Exists)
+        {
+            return settings.LlmApiKey;
+        }
+
+        return !string.IsNullOrWhiteSpace(settings.LlmApiKey)
+            ? settings.LlmApiKey
+            : Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_API_KEY") ?? "";
+    }
+
+    private static string GetModel()
+    {
+        var settings = AppSettingsService.Load();
+        if (AppSettingsService.Exists)
+        {
+            return string.IsNullOrWhiteSpace(settings.LlmModel)
+                ? "gpt-4o-mini"
+                : settings.LlmModel;
+        }
+
+        return !string.IsNullOrWhiteSpace(settings.LlmModel)
+            ? Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_MODEL") ?? settings.LlmModel
+            : Environment.GetEnvironmentVariable("SMARTOPSDESK_LLM_MODEL") ?? "gpt-4o-mini";
     }
 }

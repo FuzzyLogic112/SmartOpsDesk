@@ -132,22 +132,66 @@ You can also run the included startup script on Windows:
 启动SmartOpsDesk.bat
 ```
 
-## Use Supabase Storage
+After the login window opens, use one of these demo accounts:
+
+```text
+dev / 123456
+pm / 123456
+impl / 123456
+ops / 123456
+```
+
+## Configure Database and AI in the App
+
+SmartOpsDesk does not require command-line configuration for normal use.
+
+After logging in:
+
+1. Click `连接设置` in the top-right area of the main window.
+2. Choose a storage mode:
+   - `JSON`: local file storage, no database needed.
+   - `Supabase`: recommended cloud database mode.
+   - `Postgres`: any PostgreSQL-compatible database.
+   - `SQL Server`: Microsoft SQL Server.
+3. Paste the database connection string.
+4. Click `测试数据库连接`.
+5. Fill in AI settings if external model analysis is needed.
+6. Click `保存`.
+
+The app saves the configuration to:
+
+```text
+%APPDATA%\SmartOpsDesk\settings.json
+```
+
+After saving, the main window automatically reloads ticket data from the selected storage.
+
+## Use Supabase Cloud Storage
 
 Create a Supabase project, then copy the PostgreSQL connection string from the Supabase dashboard.
 
-Set the connection string before starting the app:
+Recommended steps:
+
+1. Open Supabase and create a project.
+2. Open the database connection settings.
+3. Copy the PostgreSQL connection string.
+4. Log in to SmartOpsDesk.
+5. Click `连接设置`.
+6. Select `Supabase`.
+7. Paste the connection string into `Supabase / Postgres 连接串`.
+8. Click `测试数据库连接`.
+9. Click `保存`.
+
+Keyword-style connection string example:
 
 ```powershell
-$env:SMARTOPSDESK_SUPABASE_CONNECTION = "postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres"
-dotnet run
+Host=aws-0-region.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.your-project-ref;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true
 ```
 
-You can also use a keyword-style Npgsql connection string:
+URI-style connection string example:
 
 ```powershell
-$env:SMARTOPSDESK_SUPABASE_CONNECTION = "Host=aws-0-region.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.your-project-ref;Password=YOUR_PASSWORD;SSL Mode=Require;Trust Server Certificate=true"
-dotnet run
+postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres
 ```
 
 When Supabase is enabled, the app automatically creates these tables:
@@ -163,45 +207,67 @@ The schema is also available in:
 database/supabase-postgres-schema.sql
 ```
 
-If `SMARTOPSDESK_SUPABASE_CONNECTION` is not set, the app uses local JSON storage.
+If Supabase is not configured, select `JSON` to keep using local file storage.
 
 ## Use SQL Server Storage
 
-SQL Server is still supported. Set this environment variable before running the app:
+SQL Server is still supported as an optional storage mode.
+
+In the app:
+
+1. Click `连接设置`.
+2. Select `SQL Server`.
+3. Paste a SQL Server connection string.
+4. Click `测试数据库连接`.
+5. Click `保存`.
+
+Example connection string:
 
 ```powershell
-$env:SMARTOPSDESK_SQLSERVER_CONNECTION = "Server=YOUR_SERVER;Database=SmartOpsDesk;User Id=YOUR_USER;Password=YOUR_PASSWORD;TrustServerCertificate=True"
-dotnet run
+Server=YOUR_SERVER;Database=SmartOpsDesk;User Id=YOUR_USER;Password=YOUR_PASSWORD;TrustServerCertificate=True
 ```
 
 ## Use a Large Model API
 
 The app works without a large model. It uses local rule-based AI by default.
 
-To enable external model analysis, configure:
+To enable external model analysis:
 
-```powershell
-$env:SMARTOPSDESK_LLM_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-$env:SMARTOPSDESK_LLM_API_KEY = "YOUR_API_KEY"
-$env:SMARTOPSDESK_LLM_MODEL = "gpt-4o-mini"
-dotnet run
+1. Log in to SmartOpsDesk.
+2. Click `连接设置`.
+3. Fill in `AI Endpoint`.
+4. Fill in `AI API Key`.
+5. Fill in `模型名`.
+6. Click `保存`.
+
+Default endpoint example:
+
+```text
+https://api.openai.com/v1/chat/completions
 ```
 
-If these variables are not configured, the large model button will not crash the app. Instead, it records a clear message saying that the model API is not configured.
+Default model example:
 
-## Run With Supabase and AI Together
-
-```powershell
-cd SmartOpsDesk
-
-$env:SMARTOPSDESK_SUPABASE_CONNECTION = "postgresql://postgres.your-project-ref:YOUR_PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres"
-
-$env:SMARTOPSDESK_LLM_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-$env:SMARTOPSDESK_LLM_API_KEY = "YOUR_API_KEY"
-$env:SMARTOPSDESK_LLM_MODEL = "gpt-4o-mini"
-
-dotnet run
+```text
+gpt-4o-mini
 ```
+
+If AI settings are empty, the large model button will not crash the app. It records a clear message saying that the model API is not configured.
+
+## Advanced Environment Variables
+
+For automated deployment or CI experiments, environment variables are still supported when no UI settings file exists.
+
+| Variable | Purpose |
+|---|---|
+| `SMARTOPSDESK_SUPABASE_CONNECTION` | Supabase/PostgreSQL connection string |
+| `SMARTOPSDESK_POSTGRES_CONNECTION` | Generic PostgreSQL connection string |
+| `SMARTOPSDESK_SQLSERVER_CONNECTION` | SQL Server connection string |
+| `SMARTOPSDESK_LLM_ENDPOINT` | Chat-completions-compatible endpoint |
+| `SMARTOPSDESK_LLM_API_KEY` | AI API key |
+| `SMARTOPSDESK_LLM_MODEL` | AI model name |
+
+For normal desktop use, prefer the `连接设置` window.
 
 ## Run Tests
 
@@ -239,6 +305,8 @@ SmartOpsDesk/
     WorkTicket.cs
   Services/
     AuthService.cs
+    AppSettings.cs
+    AppSettingsService.cs
     TicketAiAgent.cs
     LargeModelAnalyzer.cs
     TicketStore.cs
@@ -283,4 +351,3 @@ The workflow runs on push, pull request, and manual dispatch. It restores depend
 - Add Supabase server-side pagination and filtering
 - Add structured JSON response parsing for large model analysis
 - Add more automated tests
-

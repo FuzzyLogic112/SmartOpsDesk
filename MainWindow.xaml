@@ -73,6 +73,7 @@
                 </StackPanel>
                 <Button Content="规则AI分析" Click="AnalyzeSelected_Click" Background="#0E9384" BorderBrush="#0E9384" />
                 <Button Content="大模型分析" Click="LargeModelAnalyze_Click" Background="#7A5AF8" BorderBrush="#7A5AF8" />
+                <Button Content="连接设置" Click="OpenSettings_Click" Background="#B54708" BorderBrush="#B54708" />
                 <Button Content="保存" Click="Save_Click" Background="#344054" BorderBrush="#344054" />
                 <Button Content="导出CSV" Click="Export_Click" Background="#7A5AF8" BorderBrush="#7A5AF8" />
             </StackPanel>

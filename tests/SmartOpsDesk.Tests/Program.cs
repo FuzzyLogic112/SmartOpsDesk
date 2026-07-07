@@ -5,7 +5,9 @@ var tests = new List<(string Name, Action Test)>
 {
     ("AI should classify production login failure as high-priority deployment issue", TestHighPriorityDeployment),
     ("SLA should be 4 hours for high priority and 1 day for medium priority", TestSlaRules),
-    ("Demo login should accept project manager account", TestLogin)
+    ("Demo login should accept project manager account", TestLogin),
+    ("Explicit JSON settings should use local JSON storage", TestJsonSettingsOverride),
+    ("Incomplete cloud settings should fall back to local JSON storage", TestIncompleteCloudSettingsFallback)
 };
 
 var failed = 0;
@@ -49,6 +51,18 @@ static void TestLogin()
     var user = auth.Login("pm", "123456");
     Assert(user is not null, "Project manager login should succeed.");
     Assert(user!.Role == "项目经理", $"Expected 项目经理, got {user.Role}");
+}
+
+static void TestJsonSettingsOverride()
+{
+    var repository = RepositoryFactory.Create(new AppSettings { StorageMode = "JSON" });
+    Assert(repository is TicketStore, $"Expected TicketStore, got {repository.GetType().Name}");
+}
+
+static void TestIncompleteCloudSettingsFallback()
+{
+    var repository = RepositoryFactory.Create(new AppSettings { StorageMode = "Supabase" });
+    Assert(repository is TicketStore, $"Expected TicketStore, got {repository.GetType().Name}");
 }
 
 static void Assert(bool condition, string message)

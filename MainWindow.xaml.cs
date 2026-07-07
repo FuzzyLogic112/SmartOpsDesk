@@ -12,8 +12,9 @@ namespace SmartOpsDesk;
 
 public partial class MainWindow : Window
 {
-    private ITicketRepository _repository = RepositoryFactory.Create();
-    private string _storageName = RepositoryFactory.CurrentStorageName;
+    private AppSettings _settings = AppSettingsService.Load();
+    private ITicketRepository _repository;
+    private string _storageName;
     private readonly CsvExporter _csvExporter = new();
     private readonly TicketAiAgent _agent = new();
     private readonly AttachmentService _attachmentService = new();
@@ -24,6 +25,8 @@ public partial class MainWindow : Window
     public MainWindow(string userName = "王文涛", string role = "开发")
     {
         InitializeComponent();
+        _repository = RepositoryFactory.Create();
+        _storageName = RepositoryFactory.CurrentStorageName;
         var tickets = LoadTicketsWithFallback();
         _tickets = new ObservableCollection<WorkTicket>(tickets.OrderByDescending(ticket => ticket.CreatedAt));
         _view = CollectionViewSource.GetDefaultView(_tickets);
@@ -169,6 +172,21 @@ public partial class MainWindow : Window
     {
         var file = _csvExporter.Export(_view.Cast<WorkTicket>());
         SetStatus($"已导出 CSV：{file}");
+    }
+
+    private void OpenSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsWindow(_settings) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        _settings = dialog.Settings;
+        _repository = RepositoryFactory.Create(_settings);
+        _storageName = RepositoryFactory.CurrentStorageNameFor(_settings);
+        ReloadTickets();
+        SetStatus($"连接设置已保存；当前存储：{_storageName}");
     }
 
     private void ClearForm_Click(object sender, RoutedEventArgs e)
@@ -441,6 +459,20 @@ public partial class MainWindow : Window
             _storageName = "JSON 本地文件（云数据库连接失败后回退）";
             return _repository.Load();
         }
+    }
+
+    private void ReloadTickets()
+    {
+        var tickets = LoadTicketsWithFallback().OrderByDescending(ticket => ticket.CreatedAt).ToList();
+        _tickets.Clear();
+        foreach (var ticket in tickets)
+        {
+            _tickets.Add(ticket);
+        }
+
+        _view.Refresh();
+        UpdateMetrics();
+        ClearForm();
     }
 
     private void UpdateMetrics()
