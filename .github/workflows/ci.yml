@@ -1,0 +1,39 @@
+name: SmartOpsDesk CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-test-publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SmartOpsDesk.sln
+
+      - name: Build
+        run: dotnet build SmartOpsDesk.sln --configuration Release --no-restore
+
+      - name: Run smoke tests
+        run: dotnet run --project tests/SmartOpsDesk.Tests/SmartOpsDesk.Tests.csproj --configuration Release --no-build
+
+      - name: Publish Windows app
+        run: dotnet publish SmartOpsDesk.csproj --configuration Release --runtime win-x64 --self-contained false --output publish
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartOpsDesk-win-x64
+          path: publish

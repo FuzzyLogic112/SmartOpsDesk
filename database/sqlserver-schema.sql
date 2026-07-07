@@ -1,0 +1,45 @@
+CREATE TABLE Tickets (
+    Id INT NOT NULL PRIMARY KEY,
+    Title NVARCHAR(200) NOT NULL,
+    Requester NVARCHAR(80) NOT NULL,
+    Department NVARCHAR(80) NOT NULL,
+    Description NVARCHAR(MAX) NOT NULL,
+    Category NVARCHAR(80) NOT NULL,
+    Priority NVARCHAR(20) NOT NULL,
+    SuggestedOwner NVARCHAR(120) NOT NULL,
+    Status NVARCHAR(20) NOT NULL,
+    AiReason NVARCHAR(MAX) NOT NULL,
+    HandlingAdvice NVARCHAR(MAX) NOT NULL,
+    Confidence FLOAT NOT NULL,
+    CreatedAt DATETIME2 NOT NULL,
+    UpdatedAt DATETIME2 NOT NULL,
+    DueAt DATETIME2 NOT NULL
+);
+
+CREATE TABLE ApprovalRecords (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    TicketId INT NOT NULL,
+    Time DATETIME2 NOT NULL,
+    Operator NVARCHAR(80) NOT NULL,
+    Role NVARCHAR(50) NOT NULL,
+    Action NVARCHAR(80) NOT NULL,
+    Comment NVARCHAR(MAX) NOT NULL
+);
+
+CREATE TABLE TicketAttachments (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    TicketId INT NOT NULL,
+    FileName NVARCHAR(260) NOT NULL,
+    StoredPath NVARCHAR(500) NOT NULL,
+    UploadedBy NVARCHAR(80) NOT NULL,
+    UploadedAt DATETIME2 NOT NULL
+);
+
+CREATE TABLE DeploymentLogs (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    TicketId INT NOT NULL,
+    Time DATETIME2 NOT NULL,
+    Operator NVARCHAR(80) NOT NULL,
+    Environment NVARCHAR(80) NOT NULL,
+    Content NVARCHAR(MAX) NOT NULL
+);

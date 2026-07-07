@@ -1,0 +1,259 @@
+<Window x:Class="SmartOpsDesk.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SmartOpsDesk - OA智能工单分派助手"
+        Height="800"
+        Width="1220"
+        MinHeight="720"
+        MinWidth="1080"
+        Background="#F4F6F8"
+        FontFamily="Microsoft YaHei UI">
+    <Window.Resources>
+        <Style x:Key="MetricCard" TargetType="Border">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="BorderBrush" Value="#E1E7EF" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="Background" Value="#155EEF" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#155EEF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Margin" Value="0,4,0,10" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="Margin" Value="0,4,0,10" />
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1F2937" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock Text="OA智能工单分派助手" FontSize="26" FontWeight="Bold" />
+                <TextBlock Text="客户问题登记、AI分类、审批流转、附件留痕、部署日志和交付跟进"
+                           Foreground="#667085"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel Width="110" Margin="0,0,8,0">
+                    <TextBlock Text="当前用户" Foreground="#667085" />
+                    <ComboBox x:Name="UserBox">
+                        <ComboBoxItem Content="王文涛" IsSelected="True" />
+                        <ComboBoxItem Content="项目经理" />
+                        <ComboBoxItem Content="实施顾问" />
+                        <ComboBoxItem Content="运维交付" />
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Width="110" Margin="0,0,8,0">
+                    <TextBlock Text="角色" Foreground="#667085" />
+                    <ComboBox x:Name="RoleBox">
+                        <ComboBoxItem Content="开发" IsSelected="True" />
+                        <ComboBoxItem Content="项目经理" />
+                        <ComboBoxItem Content="实施" />
+                        <ComboBoxItem Content="运维" />
+                    </ComboBox>
+                </StackPanel>
+                <Button Content="规则AI分析" Click="AnalyzeSelected_Click" Background="#0E9384" BorderBrush="#0E9384" />
+                <Button Content="大模型分析" Click="LargeModelAnalyze_Click" Background="#7A5AF8" BorderBrush="#7A5AF8" />
+                <Button Content="保存" Click="Save_Click" Background="#344054" BorderBrush="#344054" />
+                <Button Content="导出CSV" Click="Export_Click" Background="#7A5AF8" BorderBrush="#7A5AF8" />
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Style="{StaticResource MetricCard}">
+                <StackPanel>
+                    <TextBlock Text="全部工单" Foreground="#667085" />
+                    <TextBlock x:Name="TotalCountText" Text="0" FontSize="28" FontWeight="Bold" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource MetricCard}">
+                <StackPanel>
+                    <TextBlock Text="高优先级" Foreground="#667085" />
+                    <TextBlock x:Name="HighCountText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#D92D20" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource MetricCard}">
+                <StackPanel>
+                    <TextBlock Text="待处理" Foreground="#667085" />
+                    <TextBlock x:Name="TodoCountText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#B54708" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Style="{StaticResource MetricCard}" Margin="0">
+                <StackPanel>
+                    <TextBlock Text="已完成" Foreground="#667085" />
+                    <TextBlock x:Name="DoneCountText" Text="0" FontSize="28" FontWeight="Bold" Foreground="#027A48" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="350" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="White" CornerRadius="8" BorderBrush="#E1E7EF" BorderThickness="1" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="新建/编辑工单" FontSize="18" FontWeight="Bold" Margin="0,0,0,12" />
+
+                        <TextBlock Text="标题" />
+                        <TextBox x:Name="TitleBox" />
+
+                        <TextBlock Text="提交人" />
+                        <TextBox x:Name="RequesterBox" />
+
+                        <TextBlock Text="部门" />
+                        <ComboBox x:Name="DepartmentBox">
+                            <ComboBoxItem Content="办公室" />
+                            <ComboBoxItem Content="人事处" />
+                            <ComboBoxItem Content="教务处" />
+                            <ComboBoxItem Content="学工处" />
+                            <ComboBoxItem Content="资产处" />
+                            <ComboBoxItem Content="信息中心" />
+                        </ComboBox>
+
+                        <TextBlock Text="问题描述" />
+                        <TextBox x:Name="DescriptionBox" MinHeight="105" TextWrapping="Wrap" AcceptsReturn="True" />
+
+                        <TextBlock Text="状态" />
+                        <ComboBox x:Name="StatusBox">
+                            <ComboBoxItem Content="待处理" />
+                            <ComboBoxItem Content="处理中" />
+                            <ComboBoxItem Content="已完成" />
+                            <ComboBoxItem Content="已挂起" />
+                            <ComboBoxItem Content="已退回" />
+                        </ComboBox>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
+                            <Button Content="新增工单" Click="Add_Click" />
+                            <Button Content="更新选中" Click="UpdateSelected_Click" Background="#0E9384" BorderBrush="#0E9384" />
+                        </StackPanel>
+                        <Button Content="清空表单" Click="ClearForm_Click" Background="#667085" BorderBrush="#667085" />
+
+                        <Border Background="#F8FAFC" CornerRadius="8" Padding="12" Margin="0,18,0,0" BorderBrush="#EAECF0" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="AI分析结果" FontWeight="Bold" Margin="0,0,0,8" />
+                                <TextBlock x:Name="AiResultText" Text="选择工单后点击 AI 分析。" TextWrapping="Wrap" Foreground="#475467" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F8FAFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#EAECF0" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock Text="扩展操作" FontWeight="Bold" Margin="0,0,0,8" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="通过审批" Click="Approve_Click" Background="#027A48" BorderBrush="#027A48" />
+                                    <Button Content="退回" Click="Reject_Click" Background="#D92D20" BorderBrush="#D92D20" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="添加附件/截图" Click="Attach_Click" Background="#344054" BorderBrush="#344054" />
+                                    <Button Content="部署日志" Click="AddDeployLog_Click" Background="#B54708" BorderBrush="#B54708" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="2" Background="White" CornerRadius="8" BorderBrush="#E1E7EF" BorderThickness="1" Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="170" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <TextBox x:Name="SearchBox" Width="260" Margin="0,0,10,0" TextChanged="Filter_Changed" />
+                            <ComboBox x:Name="PriorityFilter" Width="130" SelectionChanged="Filter_Changed">
+                                <ComboBoxItem Content="全部优先级" IsSelected="True" />
+                                <ComboBoxItem Content="高" />
+                                <ComboBoxItem Content="中" />
+                                <ComboBoxItem Content="低" />
+                            </ComboBox>
+                            <ComboBox x:Name="StatusFilter" Width="130" SelectionChanged="Filter_Changed">
+                                <ComboBoxItem Content="全部状态" IsSelected="True" />
+                                <ComboBoxItem Content="待处理" />
+                                <ComboBoxItem Content="处理中" />
+                                <ComboBoxItem Content="已完成" />
+                                <ComboBoxItem Content="已挂起" />
+                                <ComboBoxItem Content="已退回" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                            <Button Content="标记处理中" Click="MarkProcessing_Click" Background="#B54708" BorderBrush="#B54708" />
+                            <Button Content="标记完成" Click="MarkDone_Click" Background="#027A48" BorderBrush="#027A48" />
+                            <Button Content="删除" Click="Delete_Click" Background="#D92D20" BorderBrush="#D92D20" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DataGrid x:Name="TicketGrid"
+                              Grid.Row="1"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              SelectionChanged="TicketGrid_SelectionChanged"
+                              RowHeaderWidth="0"
+                              GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50" />
+                            <DataGridTextColumn Header="标题" Binding="{Binding Title}" Width="2*" />
+                            <DataGridTextColumn Header="部门" Binding="{Binding Department}" Width="90" />
+                            <DataGridTextColumn Header="分类" Binding="{Binding Category}" Width="100" />
+                            <DataGridTextColumn Header="优先级" Binding="{Binding Priority}" Width="80" />
+                            <DataGridTextColumn Header="建议负责人" Binding="{Binding SuggestedOwner}" Width="120" />
+                            <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="90" />
+                            <DataGridTextColumn Header="SLA" Binding="{Binding SlaStatus}" Width="90" />
+                            <DataGridTextColumn Header="截止时间" Binding="{Binding DueAt, StringFormat=MM-dd HH:mm}" Width="110" />
+                            <DataGridTextColumn Header="创建时间" Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd HH:mm}" Width="140" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Row="2" Background="#F8FAFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#EAECF0" BorderThickness="1">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="DetailText"
+                                       Text="选择工单后查看审批记录、附件和部署日志。"
+                                       TextWrapping="Wrap"
+                                       Foreground="#475467" />
+                        </ScrollViewer>
+                    </Border>
+
+                    <TextBlock x:Name="StatusText"
+                               Grid.Row="3"
+                               Text="就绪"
+                               Foreground="#667085"
+                               Margin="0,12,0,0" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
