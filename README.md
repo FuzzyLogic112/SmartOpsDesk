@@ -132,6 +132,19 @@ You can also run the included startup script on Windows:
 启动SmartOpsDesk.bat
 ```
 
+## Download the Windows EXE Package
+
+For normal users, the easiest way is to download the packaged Windows version from GitHub Releases:
+
+1. Open the repository Releases page.
+2. Download `SmartOpsDesk-win-x64.zip`.
+3. Unzip it to any folder.
+4. Double-click `SmartOpsDesk.exe`.
+
+This package is self-contained for Windows x64. In most cases, users do not need to install the .NET runtime separately.
+
+If Windows shows an unknown publisher warning, choose `More info` and then `Run anyway`.
+
 After the login window opens, use one of these demo accounts:
 
 ```text
@@ -284,15 +297,25 @@ The tests currently verify:
 ## Build and Publish
 
 ```powershell
-dotnet build SmartOpsDesk.sln --configuration Release
 .\publish.ps1
 ```
 
-Published files are generated in:
+The local package is generated at:
 
 ```text
-publish/
+release/SmartOpsDesk-win-x64.zip
 ```
+
+Inside the zip file, users can run `SmartOpsDesk.exe` directly.
+
+To create a GitHub Release, push a version tag:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions will build the self-contained Windows package and attach `SmartOpsDesk-win-x64.zip` to the Release automatically.
 
 ## Project Structure
 
@@ -339,7 +362,9 @@ GitHub Actions workflow:
 .github/workflows/ci.yml
 ```
 
-The workflow runs on push, pull request, and manual dispatch. It restores dependencies, builds the solution, runs smoke tests, publishes the Windows app, and uploads the published files as an artifact.
+The workflow runs on push, pull request, and manual dispatch. It restores dependencies, builds the solution, runs smoke tests, publishes a self-contained Windows app, compresses it into `SmartOpsDesk-win-x64.zip`, and uploads the zip as an artifact.
+
+When a tag like `v1.0.0` is pushed, the workflow also creates a GitHub Release and attaches the Windows zip package.
 
 ## Roadmap
 

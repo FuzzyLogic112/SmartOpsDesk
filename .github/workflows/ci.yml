@@ -3,9 +3,14 @@ name: SmartOpsDesk CI
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-test-publish:
@@ -29,11 +34,65 @@ jobs:
       - name: Run smoke tests
         run: dotnet run --project tests/SmartOpsDesk.Tests/SmartOpsDesk.Tests.csproj --configuration Release --no-build
 
-      - name: Publish Windows app
-        run: dotnet publish SmartOpsDesk.csproj --configuration Release --runtime win-x64 --self-contained false --output publish
+      - name: Publish self-contained Windows app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Remove-Item -Recurse -Force publish, release -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path publish, release | Out-Null
+          dotnet publish SmartOpsDesk.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            --output publish/SmartOpsDesk-win-x64
 
-      - name: Upload publish artifact
+          @"
+          SmartOpsDesk 使用说明
+          =====================
+
+          1. 解压 SmartOpsDesk-win-x64.zip。
+          2. 双击 SmartOpsDesk.exe 启动。
+          3. 登录账号：
+             dev / 123456
+             pm / 123456
+             impl / 123456
+             ops / 123456
+          4. 登录后点击“连接设置”，可填写 Supabase、SQL Server 和 AI 接口配置。
+
+          数据默认保存在：
+          %APPDATA%\SmartOpsDesk
+
+          如果 Windows 提示未知发布者，请选择“更多信息”后继续运行。
+          "@ | Set-Content -Encoding UTF8 publish/SmartOpsDesk-win-x64/使用说明.txt
+
+          Compress-Archive -Path publish/SmartOpsDesk-win-x64/* -DestinationPath release/SmartOpsDesk-win-x64.zip -Force
+
+      - name: Upload Windows zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: SmartOpsDesk-win-x64
-          path: publish
+          path: release/SmartOpsDesk-win-x64.zip
+
+      - name: Create GitHub Release for version tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          @"
+          SmartOpsDesk Windows 版本包
+
+          下载 SmartOpsDesk-win-x64.zip，解压后双击 SmartOpsDesk.exe 即可运行。
+
+          这个包是 win-x64 自包含版本，不需要额外安装 .NET 运行时。
+          "@ | Set-Content -Encoding UTF8 RELEASE_NOTES.md
+
+          gh release create $env:GITHUB_REF_NAME release/SmartOpsDesk-win-x64.zip `
+            --repo $env:GITHUB_REPOSITORY `
+            --title "SmartOpsDesk $env:GITHUB_REF_NAME" `
+            --notes-file RELEASE_NOTES.md

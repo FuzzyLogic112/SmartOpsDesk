@@ -7,4 +7,5 @@ obj/
 *.db
 *.log
 publish/
+release/
 TestResults/
